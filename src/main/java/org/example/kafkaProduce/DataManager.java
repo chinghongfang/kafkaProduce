@@ -1,8 +1,10 @@
 package org.example.kafkaProduce;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.header.Header;
 
 public class DataManager {
   private final String topic;
@@ -13,7 +15,7 @@ public class DataManager {
   public DataManager(String topic, long records, int recordSize) {
     this.topic = topic;
     this.records = records;
-    this.recordSize = recordSize;
+    this.recordSize = Math.max(recordSize, 30);
   }
 
   public Optional<ProducerRecord<String, String>> generateRecord() {
@@ -22,7 +24,20 @@ public class DataManager {
     return Optional.of(
         new ProducerRecord<>(
             topic,
-            String.format("key-%010d", num).concat(new String(new byte[recordSize - 14])),
-            String.format("value-%010d", num).concat(new String(new byte[recordSize - 16]))));
+            null,
+            String.format("key-%010d", num),
+            String.format("value-%010d", num),
+            List.of(
+                new Header() {
+                  @Override
+                  public String key() {
+                    return "";
+                  }
+
+                  @Override
+                  public byte[] value() {
+                    return new byte[recordSize - 30];
+                  }
+                })));
   }
 }
